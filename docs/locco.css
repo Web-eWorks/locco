@@ -80,15 +80,19 @@ table td {
     vertical-align: top;
     text-align: left;
   }
-    .docs pre {
-      margin: 15px 0 15px;
-      padding-left: 15px;
-    }
-    .docs p tt, .docs p code {
+    .docs p tt, .docs :not(pre) code {
       background: #f8f8ff;
       border: 1px solid #dedede;
       font-size: 12px;
       padding: 0 0.2em;
+    }
+    .docs pre {
+        background: #f8f8ff;
+        border: 1px solid #dedede;
+        border-radius: 2px;
+        margin: 15px 0 15px;
+        padding: 10px;
+        padding-left 15px;
     }
     .pilwrap {
       position: relative;
