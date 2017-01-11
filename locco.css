@@ -4,6 +4,7 @@ body {
   font-size: 15px;
   line-height: 22px;
   color: #252519;
+  background: #f5f5ff;
   margin: 0; padding: 0;
 }
 a {
@@ -26,9 +27,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 #background {
   position: fixed;
-  top: 0; left: 525px; right: 0; bottom: 0;
-  background: #f5f5ff;
-  border-left: 1px solid #e5e5ee;
+  top: 0; left: 0; bottom: 0;
+  width: 625px;
+  background: #ffffff;
+  border-right: 1px solid #e5e5ee;
   z-index: -1;
 }
 #jump_to, #jump_page {
@@ -72,23 +74,27 @@ table td {
   outline: 0;
 }
   td.docs, th.docs {
-    max-width: 450px;
-    min-width: 450px;
+    max-width: 550px;
+    min-width: 550px;
     min-height: 5px;
     padding: 10px 25px 1px 50px;
     overflow-x: hidden;
     vertical-align: top;
     text-align: left;
   }
-    .docs pre {
-      margin: 15px 0 15px;
-      padding-left: 15px;
-    }
-    .docs p tt, .docs p code {
+    .docs p tt, .docs :not(pre) code {
       background: #f8f8ff;
       border: 1px solid #dedede;
       font-size: 12px;
       padding: 0 0.2em;
+    }
+    .docs pre {
+        background: #f8f8ff;
+        border: 1px solid #dedede;
+        border-radius: 2px;
+        margin: 15px 0 15px;
+        padding: 10px;
+        padding-left 15px;
     }
     .pilwrap {
       position: relative;
