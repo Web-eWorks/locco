@@ -1,5 +1,5 @@
 #!/usr/bin/env lua
---[[--
+--[[
 
 	__Locco__ is a Lua port of [Docco](http://jashkenas.github.com/docco/), the
 	quick-and-dirty, hundred-line-long, literate-programming-style documentation
@@ -32,7 +32,7 @@
 	for Locco](https://github.com/rgieseke/locco) is available on GitHub, and
 	released under the MIT license.
 
---]]--
+--]]
 
 -- ### Setup & Helpers
 
@@ -168,27 +168,40 @@ local function parse(source)
 	text_len = #text
 	source:close()
 
-	-- Given a string of source code, parse out each comment and the code that
-	-- follows it, and create an individual section for it. Sections take the form:
-	--
-	--     {
-	--         docs_text = ...,
-	--         docs_html = ...,
-	--         code_text = ...,
-	--         code_html = ...,
-	--     }
+	--[[
+
+		Given a string of source code, parse out each comment and the code that
+		follows it, and create an individual section for it. Sections take the
+		form:
+
+			{
+				docs_text = ...,
+				docs_html = ...,
+				code_text = ...,
+				code_html = ...,
+			}
+
+		Line comments without a space, tab, or `[` following the `--` are
+		ignored and passed through into the code section. Useful for file
+		headers and the like.
+
+	--]]
 
 	local pos = 1
 	while pos <= text_len do
-		local comment_pos = text:match("^[ \t]*()%-%-", pos)
-		local ok, comment, npos = pcall(lb.match_comment, text, comment_pos)
-		if ok and comment then
-			pos = npos
+		local comment_pos, comment = text:match("^[ \t]*()%-%-", pos)
+		if comment_pos then
+			local ok, comment_text, npos = pcall(lb.match_comment, text, comment_pos)
+			if ok and comment_text and comment_text:sub(3, 3):match("[ \t%[]") then
+				pos = npos; comment = comment_text
+			end
+		end
+		if comment then
 			if has_code then
 				code_text = code_text:gsub('\n\n$', '\n') -- remove empty trailing line
 				sections[#sections + 1] = {
 					['docs_text'] = docs_text,
-					['code_text'] = code_text
+					['code_text'] = code_text:gsub("\t", string.rep(" ", 4))
 				}
 				has_code = false
 				docs_text, code_text = '', ''
@@ -197,22 +210,24 @@ local function parse(source)
 			-- de-indent each line by the level of indentation of the first
 			-- free-standing line, and add the resulting text to the docs
 			-- section.
-			local long, pos = comment:match("^%-%-%[(=*)%[%-?%-?()")
+			local long, pos = comment:match("^%-%-%[(=*)%[%-*()")
 			if long then
 				comment = comment:sub(pos):gsub("%s*%-*%]"..long.."%][^\r\n]*$", "")
 				local first_line, pos = comment:match("^[ \t]*(.-)\r?\n()")
 				comment = comment:sub(pos):gsub("^%s*\n(%s-[^%s])", "%1")
 				local ind, pos = comment:match("^([ \t]*)()")
 				comment = comment:sub(pos):gsub("\n"..ind, "\n")
-				docs_text = docs_text .. first_line .. comment .. '\n'
+				docs_text = docs_text .. first_line .. '\n' .. comment .. '\n'
 
 
-			-- Given a short comment, remove the comment delimiter and up to one
-			-- space or tab from the beginning, and add the resulting text to
-			-- the docs section.
+			-- Given a short comment, remove the comment delimiter and one space
+			-- or tab from the beginning, and add the resulting text to the docs
+			-- section.
 			else
 				docs_text = docs_text .. comment:gsub("^%-%-[ \t]?", '')
 			end
+
+		-- If it's not a comment, then treat the line like code.
 		else
 			local line
 			line, pos = text:match("(.-)\r?\n()", pos)
@@ -261,8 +276,8 @@ local function generate_html(source, path, filename, sections, jump_to)
 	f:write(h)
 	for i=1, #sections do
 		local t = template.table_entry:gsub('%%index%%', i..'')
-		t = t:gsub('%%(docs_html)%%', sections[i])--['docs_html'])
-		t = t:gsub('%%(code_html)%%', sections[i])--['code_html'])
+		t = t:gsub('%%(docs_html)%%', sections[i])
+		t = t:gsub('%%(code_html)%%', sections[i])
 		f:write(t)
 	end
 	f:write(template.footer)
