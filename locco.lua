@@ -1,4 +1,5 @@
 #!/usr/bin/env lua
+
 --[[
 
 	__Locco__ is a Lua port of [Docco](http://jashkenas.github.com/docco/), the
@@ -49,6 +50,10 @@ local md = require 'markdown'
 local lb = require 'luabalanced'
 -- Load HTML templates.
 local template = require 'template'
+
+-- Load Commander.lua and process arguments.
+local Commander = require 'Commander'
+local args = Commander(arg)
 
 --[[
 	Ensure the `docs` directory exists and return the _path_ of the source file.<br>
@@ -299,18 +304,29 @@ local function generate_documentation(source, path, filename, jump_to)
 	generate_html(source, path, filename, sections, jump_to)
 end
 
+-- If there are no files to process or the user wants to see the help, print the
+-- help text and return.
+if not args[1] or args:switch('h', 'help') then
+	print 'Locco.lua - A Lua documentation generator'
+	print 'Usage: locco.lua FILE [...]'
+	print ''
+	print 'Options:'
+	print '    -h  --help'
+	print '            Show this message'
+	return
+end
 
 -- Run the script.
 --
 -- Generate HTML links to other files in the documentation.
 local jump_to = ''
-if #arg > 1 then
+if #args > 1 then
 	jump_to = template.jump_start
-	for i=1, #arg do
-		local link = arg[i]:gsub('lua$', 'html')
+	for i=1, #args do
+		local link = args[i]:gsub('lua$', 'html')
 		link = link:match('.+/(.+)$') or link
 		local t = template.jump:gsub('%%jump_html%%', link)
-		t = t:gsub('%%jump_lua%%', arg[i])
+		t = t:gsub('%%jump_lua%%', args[i])
 		jump_to = jump_to..t
 	end
 	jump_to = jump_to..template.jump_end
@@ -318,12 +334,13 @@ end
 
 -- Make sure the output directory exists, generate the HTML files for each
 -- source file, print what's happening and write the style sheet.
-local path = ensure_directory(arg[1])
-for i=1, #arg do
-	local filename = arg[i]:match('.+/(.+)$') or arg[i]
-	generate_documentation(arg[i], path, filename, jump_to)
-	print(arg[i]..' --> '..path..'/docs/'..filename:gsub('lua$', 'html'))
+local path = ensure_directory(args[1])
+for i=1, #args do
+	local filename = args[i]:match('.+/(.+)$') or args[i]
+	generate_documentation(args[i], path, filename, jump_to)
+	print(args[i]..' --> '..path..'/docs/'..filename:gsub('lua$', 'html'))
 end
+
 local f, err = io.open(path..'/'..'docs/locco.css', 'wb')
 if err then print(err) end
 f:write(template.css)
