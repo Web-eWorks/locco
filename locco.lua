@@ -197,7 +197,7 @@ local function parse(source)
 		local comment_pos, comment = text:match("^[ \t]*()%-%-", pos)
 		if comment_pos then
 			local ok, comment_text, npos = pcall(lb.match_comment, text, comment_pos)
-			if ok and comment_text and comment_text:sub(3, 3):match("[ \t%[]") then
+			if ok and comment_text and comment_text:sub(3, 3):match("[ \t\n%[]") then
 				pos = npos; comment = comment_text
 			end
 		end
