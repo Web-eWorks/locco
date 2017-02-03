@@ -50,7 +50,7 @@ M.table_entry = [[
   <div class="pilwrap">
     <a class="pilcrow" href="#section-%index%">&#182;</a>
   </div>
-  %docs_html%
+%docs_html%
 </td>
 <td class="code">
   %code_html%
@@ -61,7 +61,8 @@ M.footer = [[</tbody>
     </table>
   </div>
 </body>
-</html>]]
+</html>
+]]
 
 M.css = [[/*--------------------- Layout and Typography ----------------------------*/
 body {

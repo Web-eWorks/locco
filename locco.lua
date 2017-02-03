@@ -48,23 +48,45 @@ package.path = table.concat({
 local md = require 'markdown'
 -- Load Lua Balanced.
 local lb = require 'luabalanced'
--- Load HTML templates.
-local template = require 'template'
 
--- Load Commander.lua and process arguments.
-local Commander = require 'Commander'
-local args = Commander(arg)
+-- Load Commander and process arguments.
+local args = require 'Commander' (arg, {'d', 'docs-dir', 'template'})
+
+local opts = {
+	outDir = "docs",
+	template = "templates.default"
+}
+
+-- Print some help text on the command line about locco.
+local help_text = [[
+Locco.lua - A lua documentation generator
+Usage: locco.lua FILE [...]
+
+Options:
+-h  --help            Show this message.
+-d  --docs-dir DIR    Set the output directory for processed files.
+					  Defaults to "/PATH/TO/SOURCE/docs/".
+--template TEMPLATE   Set the template file to be used for generating the output html.
+]]
+
+-- Generate the output directory path for `source`
+local function get_paths(source)
+	local path, out_path = source:match('(.+)/.+$') or '.', opts.outDir
+	if not opts.outDir:match("^%.?/") then
+		out_path = path .. '/' .. opts.outDir
+	end
+	return path, out_path
+end
 
 --[[
-	Ensure the `docs` directory exists and return the _path_ of the source file.<br>
+	Ensure the output directory exists and return the _path_ of the source file.<br>
 	Parameters:<br>
 	`source`: The source file for which documentation is generated.
 --]]
-local function ensure_directory(source)
-	local path = source:match('(.+)/.+$')
-	if not path then path = '.' end
-	os.execute('mkdir -p '..path..'/docs')
-	return path
+local function ensure_out_dir(source)
+	local path, out_path = get_paths(source)
+	os.execute('mkdir -p ' .. out_path)
+	return path, out_path
 end
 
 -- Insert HTML entities in a string.
@@ -157,24 +179,18 @@ end
 
 -- ### Main Documentation Generation Functions
 
--- Given a filename, read and parse the file into documentation
+-- Given a source text, read and parse the text into documentation
 -- and comments.
 --
 -- Parameters:<br>
--- `source`: The source file to process.
+-- `text`: The file text to process.
 
-local function parse(source)
-	local sections, text, text_len = {}, "", 0
+local function parse(text)
+	local sections, text_len = {}, #text
 	local has_code = false
 	local docs_text, code_text = '', ''
 
-	source = assert(io.open(source, "rb"))
-	text = source:read("a")
-	text_len = #text
-	source:close()
-
 	--[[
-
 		Given a string of source code, parse out each comment and the code that
 		follows it, and create an individual section for it. Sections take the
 		form:
@@ -186,10 +202,9 @@ local function parse(source)
 				code_html = ...,
 			}
 
-		Line comments without a space, tab, or `[` following the `--` are
+		Line comments without a space, tab, newline (LF or CRLF) or `[` following the `--` are
 		ignored and passed through into the code section. Useful for file
 		headers and the like.
-
 	--]]
 
 	local pos = 1
@@ -197,10 +212,11 @@ local function parse(source)
 		local comment_pos, comment = text:match("^[ \t]*()%-%-", pos)
 		if comment_pos then
 			local ok, comment_text, npos = pcall(lb.match_comment, text, comment_pos)
-			if ok and comment_text and comment_text:sub(3, 3):match("[ \t\n%[]") then
+			if ok and comment_text and comment_text:sub(3, 3):match("[ \t\r\n%[]") then
 				pos = npos; comment = comment_text
 			end
 		end
+
 		if comment then
 			if has_code then
 				code_text = code_text:gsub('\n\n$', '\n') -- remove empty trailing line
@@ -211,6 +227,7 @@ local function parse(source)
 				has_code = false
 				docs_text, code_text = '', ''
 			end
+
 			-- Given a long comment, remove the opening and closing delimiters,
 			-- de-indent each line by the level of indentation of the first
 			-- free-standing line, and add the resulting text to the docs
@@ -245,10 +262,12 @@ local function parse(source)
 			end
 		end
 	end
+
 	sections[#sections + 1] = {
 		['docs_text'] = docs_text,
 		['code_text'] = code_text
 	}
+
 	return sections
 end
 
@@ -268,83 +287,147 @@ local function highlight(sections)
 end
 
 -- After the highlighting is done, the template is filled with the documentation
--- and code snippets and an HTML file is written.
+-- and code snippets and the HTML document is assembled.
 --
 -- Parameters:<br>
--- `source`: The source file.<br>
--- `path`: Path of the source file.<br>
--- `filename`: The filename of the source file.<br>
+-- `title`: The title for the generated document.<br>
 -- `sections`: A table with the original sections and rendered as HTML.<br>
 -- `jump_to`: A HTML chunk with links to other documentation files.
-local function generate_html(source, path, filename, sections, jump_to)
-	local f, err = io.open(path..'/'..'docs/'..filename:gsub('lua$', 'html'), 'wb')
-	if err then print(err) end
-	local h = template.header:gsub('%%title%%', source)
+local function generate_html(title, sections, jump_to)
+	local out = ""
+
+	local h = opts.template.header:gsub('%%title%%', title)
 	h = h:gsub('%%jump%%', jump_to)
-	f:write(h)
+	out = out .. h
+
 	for i=1, #sections do
-		local t = template.table_entry:gsub('%%index%%', i..'')
+		local t = opts.template.table_entry:gsub('%%index%%', i..'')
 		t = t:gsub('%%(docs_html)%%', sections[i])
 		t = t:gsub('%%(code_html)%%', sections[i])
-		f:write(t)
+		out = out .. t
 	end
-	f:write(template.footer)
-	f:close()
+
+	out = out .. opts.template.footer
+	return out
 end
 
--- Generate the documentation for a source file by reading it in,
--- splitting it up into comment/code sections, highlighting and merging
--- them into an HTML template.
+-- Generate the documentation for a source file by reading it in, splitting it
+-- up into comment/code sections, highlighting and merging them into an HTML
+-- template.
 --
 -- Parameters:<br>
--- `source`: The source file to process.<br>
--- `path`: Path of the source file.<br>
+-- `source`: The path to the source file to process.<br>
 -- `filename`: The filename of the source file.<br>
 -- `jump_to`: A HTML chunk with links to other documentation files.
-local function generate_documentation(source, path, filename, jump_to)
-	local sections = parse(source)
+-- Returns:<br>
+-- `true` on success, false otherwise.
+local function generate_documentation(source, filename, jump_to)
+	local path, out_path = get_paths(source)
+
+	local file, err = io.open(source, 'r')
+	if not file then
+		print("Error opening source '"..source.."' for reading.  Skipping file.")
+		print("Error Message: " .. err)
+		return
+	end
+
+	local text, err = file:read("a")
+	file:close()
+
+	if not text then
+		print("Error reading source '"..source.."'. Skipping file.")
+		print("Error Message: " .. err)
+		return
+	end
+
+	local sections = parse(text)
 	local sections = highlight(sections)
-	generate_html(source, path, filename, sections, jump_to)
+	local html = generate_html(source, sections, jump_to)
+
+	local out_file = out_path .. '/' .. filename:gsub("lua$", 'html')
+
+	local f, err = io.open(out_file, 'wb')
+	if err then
+		print("Error opening '" .. out_file .. "' for writing.  Skipping file.")
+		print(err)
+		return
+	end
+
+	f:write(html)
+	f:close()
+
+	return true
+end
+
+--[[
+	### CLI Functions
+
+	Process arguments and run the converter over each file passed to locco.
+
+	If a file is unable to be converted, it is skipped, and a message is printed
+	on the command line.
+--]]
+local function main(args)
+	opts.outDir = args:param('d', 'docs-dir') or opts.outDir
+	local template_name = args:param('template') or opts.template
+
+	-- Load HTML templates.
+	local ok, res = pcall(require, template_name)
+	if ok and res then
+		opts.template = res
+	else
+		print("Error loading template file '" .. template_name .. "'")
+		if not res then
+			print("did not return a template")
+		else
+			print(res)
+		end
+
+		-- If the template is unable to be loaded for whatever reason, fall back
+		-- on the default.
+		print("Using default template.")
+		opts.template = require(opts.template)
+	end
+
+	-- Generate HTML links to other files in the documentation.
+	local jump_to = ''
+	if #args > 1 then
+		jump_to = opts.template.jump_start
+		for i=1, #args do
+			local link = args[i]:gsub('lua$', 'html')
+			link = link:match('.+/(.+)$') or link
+			local t = opts.template.jump:gsub('%%jump_html%%', link)
+			t = t:gsub('%%jump_lua%%', args[i])
+			jump_to = jump_to..t
+		end
+		jump_to = jump_to..opts.template.jump_end
+	end
+
+	-- Make sure the output directory exists, generate the HTML files for each
+	-- source file, print what's happening, and write the style sheet.
+	local path, out_path = ensure_out_dir(args[1])
+	for i=1, #args do
+		local filename = args[i]:match('.+/(.+)$') or args[i]
+		local html = generate_documentation(args[i], filename, jump_to)
+		local out_path = out_path .. '/' .. filename:gsub("lua$", "html")
+		if ok then
+			print(args[i] .. ' --> ' .. out_path)
+		end
+	end
+
+	-- Generate the CSS stylesheet in the output directory.
+	local f, err = io.open(out_path..'/locco.css', 'wb')
+	if err then print(err) end
+	f:write(opts.template.css)
+	f:close()
 end
 
 -- If there are no files to process or the user wants to see the help, print the
 -- help text and return.
 if not args[1] or args:switch('h', 'help') then
-	print 'Locco.lua - A Lua documentation generator'
-	print 'Usage: locco.lua FILE [...]'
-	print ''
-	print 'Options:'
-	print '    -h  --help'
-	print '            Show this message'
+	print(help_text)
 	return
 end
 
 -- Run the script.
---
--- Generate HTML links to other files in the documentation.
-local jump_to = ''
-if #args > 1 then
-	jump_to = template.jump_start
-	for i=1, #args do
-		local link = args[i]:gsub('lua$', 'html')
-		link = link:match('.+/(.+)$') or link
-		local t = template.jump:gsub('%%jump_html%%', link)
-		t = t:gsub('%%jump_lua%%', args[i])
-		jump_to = jump_to..t
-	end
-	jump_to = jump_to..template.jump_end
-end
-
--- Make sure the output directory exists, generate the HTML files for each
--- source file, print what's happening and write the style sheet.
-local path = ensure_directory(args[1])
-for i=1, #args do
-	local filename = args[i]:match('.+/(.+)$') or args[i]
-	generate_documentation(args[i], path, filename, jump_to)
-	print(args[i]..' --> '..path..'/docs/'..filename:gsub('lua$', 'html'))
-end
-
-local f, err = io.open(path..'/'..'docs/locco.css', 'wb')
-if err then print(err) end
-f:write(template.css)
-f:close()
+main(args)
