@@ -193,7 +193,7 @@ local function parse(source)
 	--]]
 
 	local pos = 1
-	while pos <= text_len do
+	while pos < text_len do
 		local comment_pos, comment = text:match("^[ \t]*()%-%-", pos)
 		if comment_pos then
 			local ok, comment_text, npos = pcall(lb.match_comment, text, comment_pos)
@@ -234,8 +234,11 @@ local function parse(source)
 
 		-- If it's not a comment, then treat the line like code.
 		else
-			local line
-			line, pos = text:match("(.-)\r?\n()", pos)
+			local line, npos = text:match("(.-)\r?\n()", pos)
+			if line then pos = npos else
+				line, pos = text:sub(pos), text_len
+			end
+
 			if not line:match('^#!') then -- ignore shebangs.
 				has_code = true
 				code_text = code_text..line..'\n'
