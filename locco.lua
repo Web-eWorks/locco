@@ -50,7 +50,7 @@ local md = require 'markdown'
 local lb = require 'luabalanced'
 
 -- Load Commander and process arguments.
-local args = require 'Commander' (arg, {'d', 'docs-dir', 'template'})
+local args = require 'Commander' (arg, {'d', 'docs-dir', 'o', 'out', 'template'})
 
 local opts = {
 	outDir = "docs",
@@ -63,10 +63,12 @@ Locco.lua - A lua documentation generator
 Usage: locco.lua FILE [...]
 
 Options:
--h  --help            Show this message.
--d  --docs-dir DIR    Set the output directory for processed files.
-					  Defaults to "/PATH/TO/SOURCE/docs/".
---template TEMPLATE   Set the template file to be used for generating the output html.
+    -h  --help            Show this message.
+    -o  --out FILE        Override the output name for FILE.  This option is ignored when
+                              processing multiple files.
+    -d  --docs-dir DIR    Set the output directory for processed files.
+                              Defaults to "/PATH/TO/SOURCE/docs/".
+    --template TEMPLATE   Set the template file to be used for generating the output html.
 ]]
 
 -- Generate the output directory path for `source`
@@ -79,7 +81,8 @@ local function get_paths(source)
 end
 
 --[[
-	Ensure the output directory exists and return the _path_ of the source file.<br>
+	Ensure the output directory exists and return the _path_ of the source file.
+
 	Parameters:<br>
 	`source`: The source file for which documentation is generated.
 --]]
@@ -89,10 +92,12 @@ local function ensure_out_dir(source)
 	return path, out_path
 end
 
--- Insert HTML entities in a string.
---
--- Parameters:<br>
--- `s`: String to escape.
+--[[
+	Insert HTML entities in a string.
+
+	Parameters:<br>
+	`s`: String to escape.
+--]]
 local function escape(s)
 	s = s:gsub('&', '&amp;')
 	s = s:gsub('<', '&lt;')
@@ -344,7 +349,7 @@ local function generate_documentation(source, filename, jump_to)
 	local sections = highlight(sections)
 	local html = generate_html(source, sections, jump_to)
 
-	local out_file = out_path .. '/' .. filename:gsub("lua$", 'html')
+	local out_file = out_path .. '/' .. filename
 
 	local f, err = io.open(out_file, 'wb')
 	if err then
@@ -368,6 +373,7 @@ end
 	on the command line.
 --]]
 local function main(args)
+	opts.outName = #args == 1 and args:param('o', 'out')
 	opts.outDir = args:param('d', 'docs-dir') or opts.outDir
 	local template_name = args:param('template') or opts.template
 
@@ -407,8 +413,8 @@ local function main(args)
 	-- source file, print what's happening, and write the style sheet.
 	local path, out_path = ensure_out_dir(args[1])
 	for i=1, #args do
-		local filename = args[i]:match('.+/(.+)$') or args[i]
-		local html = generate_documentation(args[i], filename, jump_to)
+		local filename = opts.outName or args[i]:match('.+/(.+)$') or args[i]
+		local html = generate_documentation(args[i], filename:gsub('%.lua$', '.html'), jump_to)
 		local out_path = out_path .. '/' .. filename:gsub("lua$", "html")
 		if ok then
 			print(args[i] .. ' --> ' .. out_path)
