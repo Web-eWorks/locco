@@ -18,8 +18,9 @@
 	markdown engine it ships with [Niklas Frykholm](http://www.frykholm.se/)'s
 	[markdown.lua](http://www.frykholm.se/files/markdown.lua) in the [Lua 5.2
 	compatible version](https://github.com/speedata/luamarkdown) from [Patrick
-	Gundlach](https://github.com/pgundlach). Otherwise there are no external
-	dependencies.
+	Gundlach](https://github.com/pgundlach). Locco also uses
+	[Commander.lua](https://gitlab.com/axtel-sturnclaw/Commander) for
+	command-line processing. Otherwise there are no external dependencies.
 
 	The generated HTML documentation for the given source files is saved into a
 	`docs` directory. If you have Locco on your path you can run it from the
@@ -50,26 +51,28 @@ local md = require 'markdown'
 local lb = require 'luabalanced'
 
 -- Load Commander and process arguments.
-local args = require 'Commander' (arg, {'d', 'docs-dir', 'o', 'out', 'template'})
+local cmdr = require 'Commander' {
+	usage = "locco.lua [FILE] [...]",
+	summary = "Locco is a simple lua documentation generator, transforming markdown\n"
+	.. "formatted source code comments into human-legible HTML pages."
+}:param {
+	'd', 'docs-dir', help_arg = "<dir>",
+	help = "The output directory to create the documentation in.\n"
+	.. "Defaults to [FILEPATH]/docs/"
+}:param {
+	'o', 'out', help_arg = "<file>",
+	help = "If only one file is being processed, set the output name of the file."
+}:param {
+	'template', help_arg = "<template name>",
+	help = "Set the name of the documentation template to use."
+}
+
+local args = cmdr:parse(arg)
 
 local opts = {
 	outDir = "docs",
 	template = "templates.default"
 }
-
--- Print some help text on the command line about locco.
-local help_text = [[
-Locco.lua - A lua documentation generator
-Usage: locco.lua FILE [...]
-
-Options:
-    -h  --help            Show this message.
-    -o  --out FILE        Override the output name for FILE.  This option is ignored when
-                              processing multiple files.
-    -d  --docs-dir DIR    Set the output directory for processed files.
-                              Defaults to "/PATH/TO/SOURCE/docs/".
-    --template TEMPLATE   Set the template file to be used for generating the output html.
-]]
 
 -- Generate the output directory path for `source`
 local function get_paths(source)
@@ -431,8 +434,7 @@ end
 -- If there are no files to process or the user wants to see the help, print the
 -- help text and return.
 if not args[1] or args:switch('h', 'help') then
-	print(help_text)
-	return
+	print(cmdr:help()) return
 end
 
 -- Run the script.

@@ -60,8 +60,9 @@ Balanced</a> to split up the code. As a
 markdown engine it ships with <a href="http://www.frykholm.se/">Niklas Frykholm</a>'s
 <a href="http://www.frykholm.se/files/markdown.lua">markdown.lua</a> in the <a href="https://github.com/speedata/luamarkdown">Lua 5.2
 compatible version</a> from <a href="https://github.com/pgundlach">Patrick
-Gundlach</a>. Otherwise there are no external
-dependencies.</p>
+Gundlach</a>. Locco also uses
+<a href="https://gitlab.com/axtel-sturnclaw/Commander">Commander.lua</a> for
+command-line processing. Otherwise there are no external dependencies.</p>
 
 <p>The generated HTML documentation for the given source files is saved into a
 <code>docs</code> directory. If you have Locco on your path you can run it from the
@@ -153,7 +154,23 @@ package.path = table.concat({
 
 </td>
 <td class="code">
-  <div class="highlight"><pre><span class="k">local</span> args = <span class="nt">require</span> <span class="s">'Commander'</span> (arg, {<span class="s">'d'</span>, <span class="s">'docs-dir'</span>, <span class="s">'o'</span>, <span class="s">'out'</span>, <span class="s">'template'</span>})
+  <div class="highlight"><pre><span class="k">local</span> cmdr = <span class="nt">require</span> <span class="s">'Commander'</span> {
+    usage = <span class="s">"locco.lua [FILE] [...]"</span>,
+    summary = <span class="s">"Locco is a simple lua documentation generator, transforming markdown\n"</span>
+    .. <span class="s">"formatted source code comments into human-legible HTML pages."</span>
+}:param {
+    <span class="s">'d'</span>, <span class="s">'docs-dir'</span>, help_arg = <span class="s">"&lt;dir&gt;"</span>,
+    help = <span class="s">"The output directory to create the documentation in.\n"</span>
+    .. <span class="s">"Defaults to [FILEPATH]/docs/"</span>
+}:param {
+    <span class="s">'o'</span>, <span class="s">'out'</span>, help_arg = <span class="s">"&lt;file&gt;"</span>,
+    help = <span class="s">"If only one file is being processed, set the output name of the file."</span>
+}:param {
+    <span class="s">'template'</span>, help_arg = <span class="s">"&lt;template name&gt;"</span>,
+    help = <span class="s">"Set the name of the documentation template to use."</span>
+}
+
+<span class="k">local</span> args = cmdr:parse(arg)
 
 <span class="k">local</span> opts = {
     outDir = <span class="s">"docs"</span>,
@@ -165,31 +182,6 @@ package.path = table.concat({
 <td class="docs">
   <div class="pilwrap">
     <a class="pilcrow" href="#section-8">&#182;</a>
-  </div>
-
-<p>Print some help text on the command line about locco.</p>
-
-
-</td>
-<td class="code">
-  <div class="highlight"><pre><span class="k">local</span> help_text = <span class="s">[[
-Locco.lua - A lua documentation generator
-Usage: locco.lua FILE [...]
-
-Options:
-    -h  --help            Show this message.
-    -o  --out FILE        Override the output name for FILE.  This option is ignored when
-                              processing multiple files.
-    -d  --docs-dir DIR    Set the output directory for processed files.
-                              Defaults to "/PATH/TO/SOURCE/docs/".
-    --template TEMPLATE   Set the template file to be used for generating the output html.
-]]</span>
-</pre></div>
-</td>
-</tr><tr id="section-9">
-<td class="docs">
-  <div class="pilwrap">
-    <a class="pilcrow" href="#section-9">&#182;</a>
   </div>
 
 <p>Generate the output directory path for <code>source</code></p>
@@ -206,10 +198,10 @@ Options:
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-10">
+</tr><tr id="section-9">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-10">&#182;</a>
+    <a class="pilcrow" href="#section-9">&#182;</a>
   </div>
 
 
@@ -229,10 +221,10 @@ Options:
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-11">
+</tr><tr id="section-10">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-11">&#182;</a>
+    <a class="pilcrow" href="#section-10">&#182;</a>
   </div>
 
 
@@ -254,10 +246,10 @@ Options:
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-12">
+</tr><tr id="section-11">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-12">&#182;</a>
+    <a class="pilcrow" href="#section-11">&#182;</a>
   </div>
 
 <p>Define the Lua keywords, built-in functions and operators that should
@@ -281,10 +273,10 @@ be highlighted.</p>
 <span class="k">local</span> operators = { <span class="s">'and'</span>, <span class="s">'not'</span>, <span class="s">'or'</span> }
 </pre></div>
 </td>
-</tr><tr id="section-13">
+</tr><tr id="section-12">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-13">&#182;</a>
+    <a class="pilcrow" href="#section-12">&#182;</a>
   </div>
 
 <p>Wrap an item from a list of Lua keywords in a span template or return the
@@ -308,10 +300,10 @@ Parameters:<br>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-14">
+</tr><tr id="section-13">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-14">&#182;</a>
+    <a class="pilcrow" href="#section-13">&#182;</a>
   </div>
 
 <p>Quick and dirty source code highlighting. A chunk of code is split into
@@ -339,10 +331,10 @@ a span having one of the classes defined in the Locco style sheet.<br></p>
 </span>                s = escape(s)
 </pre></div>
 </td>
-</tr><tr id="section-15">
+</tr><tr id="section-14">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-15">&#182;</a>
+    <a class="pilcrow" href="#section-14">&#182;</a>
   </div>
 
 <p>First highlight function names.</p>
@@ -353,10 +345,10 @@ a span having one of the classes defined in the Locco style sheet.<br></p>
   <div class="highlight"><pre>                s = s:gsub(<span class="s">'function ([&#37;w_:&#37;.]+)'</span>, <span class="s">'function &lt;span class="nf"&gt;&#37;1&lt;/span&gt;'</span>)
 </pre></div>
 </td>
-</tr><tr id="section-16">
+</tr><tr id="section-15">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-16">&#182;</a>
+    <a class="pilcrow" href="#section-15">&#182;</a>
   </div>
 
 <p>There might be a non-keyword at the beginning of the snippet.</p>
@@ -367,10 +359,10 @@ a span having one of the classes defined in the Locco style sheet.<br></p>
   <div class="highlight"><pre>                sout = s:match(<span class="s">'^(&#37;A+)'</span>) <span class="o">or</span> <span class="s">''</span>
 </pre></div>
 </td>
-</tr><tr id="section-17">
+</tr><tr id="section-16">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-17">&#182;</a>
+    <a class="pilcrow" href="#section-16">&#182;</a>
   </div>
 
 <p>Iterate through Lua items and try to wrap operators,
@@ -399,10 +391,10 @@ If nothing was highlighted go to the next category.</p>
 
 </pre></div>
 </td>
-</tr><tr id="section-18">
+</tr><tr id="section-17">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-18">&#182;</a>
+    <a class="pilcrow" href="#section-17">&#182;</a>
   </div>
 
 <h3>Main Documentation Generation Functions</h3>
@@ -413,10 +405,10 @@ If nothing was highlighted go to the next category.</p>
   <div class="highlight"><pre>
 </pre></div>
 </td>
-</tr><tr id="section-19">
+</tr><tr id="section-18">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-19">&#182;</a>
+    <a class="pilcrow" href="#section-18">&#182;</a>
   </div>
 
 <p>Given a source text, read and parse the text into documentation
@@ -435,10 +427,10 @@ and comments.</p>
     <span class="k">local</span> docs_text, code_text = <span class="s">''</span>, <span class="s">''</span>
 </pre></div>
 </td>
-</tr><tr id="section-20">
+</tr><tr id="section-19">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-20">&#182;</a>
+    <a class="pilcrow" href="#section-19">&#182;</a>
   </div>
 
 
@@ -485,10 +477,10 @@ headers and the like.</p>
             <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-21">
+</tr><tr id="section-20">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-21">&#182;</a>
+    <a class="pilcrow" href="#section-20">&#182;</a>
   </div>
 
 <p>Given a long comment, remove the opening and closing delimiters,
@@ -510,10 +502,10 @@ section.</p>
 
 </pre></div>
 </td>
-</tr><tr id="section-22">
+</tr><tr id="section-21">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-22">&#182;</a>
+    <a class="pilcrow" href="#section-21">&#182;</a>
   </div>
 
 <p>Given a short comment, remove the comment delimiter and one space
@@ -528,10 +520,10 @@ section.</p>
             <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-23">
+</tr><tr id="section-22">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-23">&#182;</a>
+    <a class="pilcrow" href="#section-22">&#182;</a>
   </div>
 
 <p>If it's not a comment, then treat the line like code.</p>
@@ -561,10 +553,10 @@ section.</p>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-24">
+</tr><tr id="section-23">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-24">&#182;</a>
+    <a class="pilcrow" href="#section-23">&#182;</a>
   </div>
 
 <p>Loop through a table of split sections and convert the documentation
@@ -587,10 +579,10 @@ table.</p>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-25">
+</tr><tr id="section-24">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-25">&#182;</a>
+    <a class="pilcrow" href="#section-24">&#182;</a>
   </div>
 
 <p>After the highlighting is done, the template is filled with the documentation
@@ -623,10 +615,10 @@ and code snippets and the HTML document is assembled.</p>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-26">
+</tr><tr id="section-25">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-26">&#182;</a>
+    <a class="pilcrow" href="#section-25">&#182;</a>
   </div>
 
 <p>Generate the documentation for a source file by reading it in, splitting it
@@ -682,10 +674,10 @@ Returns:<br>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-27">
+</tr><tr id="section-26">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-27">&#182;</a>
+    <a class="pilcrow" href="#section-26">&#182;</a>
   </div>
 
 
@@ -706,10 +698,10 @@ on the command line.</p>
     <span class="k">local</span> template_name = args:param(<span class="s">'template'</span>) <span class="o">or</span> opts.template
 </pre></div>
 </td>
-</tr><tr id="section-28">
+</tr><tr id="section-27">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-28">&#182;</a>
+    <a class="pilcrow" href="#section-27">&#182;</a>
   </div>
 
 <p>Load HTML templates.</p>
@@ -729,10 +721,10 @@ on the command line.</p>
         <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-29">
+</tr><tr id="section-28">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-29">&#182;</a>
+    <a class="pilcrow" href="#section-28">&#182;</a>
   </div>
 
 <p>If the template is unable to be loaded for whatever reason, fall back
@@ -746,10 +738,10 @@ on the default.</p>
     <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-30">
+</tr><tr id="section-29">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-30">&#182;</a>
+    <a class="pilcrow" href="#section-29">&#182;</a>
   </div>
 
 <p>Generate HTML links to other files in the documentation.</p>
@@ -771,10 +763,10 @@ on the default.</p>
     <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-31">
+</tr><tr id="section-30">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-31">&#182;</a>
+    <a class="pilcrow" href="#section-30">&#182;</a>
   </div>
 
 <p>Make sure the output directory exists, generate the HTML files for each
@@ -794,10 +786,10 @@ source file, print what's happening, and write the style sheet.</p>
     <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-32">
+</tr><tr id="section-31">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-32">&#182;</a>
+    <a class="pilcrow" href="#section-31">&#182;</a>
   </div>
 
 <p>Generate the CSS stylesheet in the output directory.</p>
@@ -812,10 +804,10 @@ source file, print what's happening, and write the style sheet.</p>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-33">
+</tr><tr id="section-32">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-33">&#182;</a>
+    <a class="pilcrow" href="#section-32">&#182;</a>
   </div>
 
 <p>If there are no files to process or the user wants to see the help, print the
@@ -825,15 +817,14 @@ help text and return.</p>
 </td>
 <td class="code">
   <div class="highlight"><pre><span class="k">if</span> <span class="o">not</span> args[1] <span class="o">or</span> args:switch(<span class="s">'h'</span>, <span class="s">'help'</span>) <span class="k">then</span>
-    <span class="nt">print</span>(help_text)
-    <span class="k">return</span>
+    <span class="nt">print</span>(cmdr:help()) <span class="k">return</span>
 <span class="k">end</span>
 </pre></div>
 </td>
-</tr><tr id="section-34">
+</tr><tr id="section-33">
 <td class="docs">
   <div class="pilwrap">
-    <a class="pilcrow" href="#section-34">&#182;</a>
+    <a class="pilcrow" href="#section-33">&#182;</a>
   </div>
 
 <p>Run the script.</p>
